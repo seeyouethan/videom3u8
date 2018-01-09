@@ -5,8 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:videom3u8"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="m3u8转换工具" Height="380" Width="600">
     <Grid>
-        
+        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="2    " Margin="-9,4,-10,0" Stroke="Black" VerticalAlignment="Top" Width="611"/>
+
+        <Button x:Name="Select" Content="选    择" HorizontalAlignment="Left" Margin="20,14,0,0" VerticalAlignment="Top" Width="75" Height="30" Click="Select_OnClick" Cursor="Hand"/>
+        <Button x:Name="Start" Content="开    始" HorizontalAlignment="Left" Margin="109,14,0,0" VerticalAlignment="Top" Width="75" Height="30" RenderTransformOrigin="1.553,0.701" Click="Start_OnClick" Cursor="Hand"/>
+        <TextBox x:Name="FileDir" HorizontalAlignment="Left" Height="30" FontSize="20" Margin="20,50,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="553"  />
+        <TextBox x:Name="NewFileDir" HorizontalAlignment="Left" Height="30" FontSize="20" Margin="20,85,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="553"  />
+        <TextBox x:Name="LogTextBox" HorizontalAlignment="Left" Height="215" Margin="20,120,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="553" VerticalScrollBarVisibility="Visible" AcceptsReturn="True"/>
+
     </Grid>
 </Window>
