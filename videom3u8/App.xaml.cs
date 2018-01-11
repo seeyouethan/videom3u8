@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Threading;
+using videom3u8.Tools;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 
@@ -19,13 +21,18 @@ namespace videom3u8
     {
         System.Threading.Mutex mutex;
 
+
         public App()
         {
+            log4net.Config.XmlConfigurator.Configure();
             this.Startup += new StartupEventHandler(App_Startup);
         }
 
         void App_Startup(object sender, StartupEventArgs e)
         {
+            Current.DispatcherUnhandledException += App_OnDispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
             bool ret;
             mutex = new System.Threading.Mutex(true, "ElectronicNeedleTherapySystem", out ret);
 
@@ -50,6 +57,49 @@ namespace videom3u8
                 }
             }
             base.OnExit(e);
+        }
+
+
+        /// <summary>
+        /// UI线程抛出全局异常事件处理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void App_OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            try
+            {
+                LogHelper.AddErrorLog(e.Exception.ToString());
+                MessageBox.Show("很抱歉，当前应用程序遇到一些问题，该操作已经终止，请进行重试，如果问题继续存在，请联系开发人员.", "意外的操作", MessageBoxButton.OK, MessageBoxImage.Information);
+                e.Handled = true;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.AddErrorLog(ex.ToString());
+                MessageBox.Show("应用程序发生不可恢复的异常，将要退出！");
+            }
+        }
+
+        /// <summary>
+        /// 非UI线程抛出全局异常事件处理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            try
+            {
+                var exception = e.ExceptionObject as Exception;
+                if (exception != null)
+                {
+                    LogHelper.AddErrorLog(exception.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.AddErrorLog(ex.ToString());
+                MessageBox.Show("应用程序发生不可恢复的异常，将要退出！");
+            }
         }
     }
 }

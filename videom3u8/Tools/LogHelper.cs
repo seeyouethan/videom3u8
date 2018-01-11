@@ -4,31 +4,43 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using log4net;
 
 namespace videom3u8.Tools
 {
     public static class LogHelper
     {
-        public static string logPath = Environment.CurrentDirectory + "\\log.log";
-        public static void AddLog(string str)
+        private static ILog logWriter = LogManager.GetLogger("LogWriter");
+
+
+        public static void AddErrorLog(string str)
         {
-            FileStream fs = new FileStream(logPath, FileMode.OpenOrCreate);
-            //byte[] data = System.Text.Encoding.Default.GetBytes(DateTime.Now+"----------\r"+str+"\r");
-            byte[] data = System.Text.Encoding.Default.GetBytes(str + "\r");
+            logWriter.Error(str);
+        }
+
+        public static void AddEventLog(string str)
+        {
+            logWriter.Info(str);
+        }
+
+
+        public static void AddFFmpegLog(string str)
+        {
             try
             {
-                //设定书写的開始位置为文件的末尾  
+                FileStream fs = new FileStream(Environment.CurrentDirectory + "\\Log\\FFmpegLog.log", FileMode.OpenOrCreate);
+                byte[] data = System.Text.Encoding.Default.GetBytes(DateTime.Now + "-----------\r\n" + str + "\r\n");
+
                 fs.Position = fs.Length;
-                //将待写入内容追加到文件末尾  
                 fs.Write(data, 0, data.Length);
+                fs.Close();
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show("文件打开失败" + ex.ToString(), "系统提示");
+                System.Windows.MessageBox.Show("非常抱歉，FFmpeg日志打开失败，请联系开发人员。" + ex.ToString(), "系统提示");
             }
             finally
             {
-                fs.Close();
             }
         }
     }

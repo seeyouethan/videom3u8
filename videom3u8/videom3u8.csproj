@@ -38,11 +38,18 @@
   <PropertyGroup>
     <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <NoWin32Manifest>true</NoWin32Manifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="ESBasic">
       <HintPath>C:\com\ESBasic.dll</HintPath>
     </Reference>
+    <Reference Include="log4net">
+      <HintPath>C:\com\log4net\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
@@ -64,6 +71,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Entity\VideoMp4.cs" />
+    <Compile Include="Tools\AppConfigHelper.cs" />
     <Compile Include="Tools\CommonStatic.cs" />
     <Compile Include="Tools\FileHelper.cs" />
     <Compile Include="Tools\CmdHelper.cs" />

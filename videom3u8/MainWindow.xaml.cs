@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -34,21 +35,47 @@ namespace videom3u8
 
         private void Select_OnClick(object sender, RoutedEventArgs e)
         {
-            FolderBrowserDialog dialog = new FolderBrowserDialog();
-            dialog.Description = "请要转换的视频的路径";
+            FolderBrowserDialog dialog = new FolderBrowserDialog {Description = "请选择要源视频的目录"};
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string foldPath = dialog.SelectedPath;
-                //System.Windows.Forms.MessageBox.Show("已选择文件夹:" + foldPath, "选择文件夹提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                FileDir.Text = foldPath;
+                if (TabControl0.SelectedIndex == 0)
+                {
+                    FileDir.Text = foldPath;
+                }
+                else if (TabControl0.SelectedIndex == 1)
+                {
+                    FileDir1.Text = foldPath;
+                }
             }
         }
 
+        public string cmdPath = CommonStatic.FFmpegPath;
+
         private void Start_OnClick(object sender, RoutedEventArgs e)
         {
-            var foldPath = FileDir.Text;
-            var newfoldPath = NewFileDir.Text;
+            //清空当前列表
+            ListQueue.Clear();
+            //清空进度条
+            this.pb.Maximum = 0;
+            this.tb.Text = "0%";
+            this.pb.Value = 0;
+
+            var foldPath = "";
+            var newfoldPath = "";
+            if (TabControl0.SelectedIndex == 0)
+            {
+                foldPath = FileDir.Text;
+                newfoldPath = NewFileDir.Text;
+                cmdPath = CommonStatic.FFmpegPath;
+
+            }
+            else if (TabControl0.SelectedIndex == 1)
+            {
+                foldPath = FileDir1.Text;
+                newfoldPath = NewFileDir1.Text;
+                cmdPath = CommonStatic.Qtpath;
+            }
             if (string.IsNullOrEmpty(foldPath))
             {
                 System.Windows.Forms.MessageBox.Show("请选择要转换的视频的路径", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -60,6 +87,15 @@ namespace videom3u8
                 System.Windows.Forms.MessageBox.Show("请输入要转换的视频的新路径", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
+            if (TabControl0.SelectedIndex == 1)
+            {
+                //在 【将元信息设置到第一帧】 模式下，生成文件的路径不能够和源文件路径一样，否则会出错
+                if (foldPath == newfoldPath)
+                {
+                    System.Windows.Forms.MessageBox.Show("【生成文件路径】不能够和【源文件路径】一样。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+            }
 
             DirectoryInfo thisOne = new DirectoryInfo(foldPath);
             DeepFileDir(thisOne);
@@ -70,15 +106,21 @@ namespace videom3u8
                 return;
             }
             LogTextBox.Clear();
-            LogTextBox.Text="该目录下共找到 " + ListQueue.Count + " 个视频，正在进行转换......\n";
+            LogTextBox.Text="该目录下共找到 " + ListQueue.Count + " 个视频，开始进行转换......\n";
             iAmount = ListQueue.Count;
             iCount = 0;
             iNow = 0;
             Thread thread = new Thread(ThreadStart);
             thread.IsBackground = true;
             thread.Start();
+
             Select.IsEnabled = false;
             Start.IsEnabled = false;
+
+            Select1.IsEnabled = false;
+            Start1.IsEnabled = false;
+
+            pb.Maximum = ListQueue.Count;
         }
         
         private Queue<VideoMp4> ListQueue = new Queue<VideoMp4>();
@@ -92,13 +134,37 @@ namespace videom3u8
                 if (fInfo.Extension == ".mp4")
                 {
                     var oldFilePath = fInfo.FullName;
-                    var newdir = fInfo.DirectoryName.Replace(FileDir.Text, NewFileDir.Text);
-                    //var newPath = fInfo.DirectoryName + "\\" + fInfo.Name.Replace(fInfo.Extension, "") + "\\";
-                    var newPath = newdir + "\\" + fInfo.Name.Replace(fInfo.Extension, "") + "\\";
-                    var newFilePath = newPath  + fInfo.Name.Replace(fInfo.Extension, "") + ".m3u8";
+                    var newdir ="";
+
+                    var newPath = "";
+                    var newFilePath = "";
+
+                    if (TabControl0.SelectedIndex == 0)
+                    {
+                        //转换为m3u8
+                        newdir = fInfo.DirectoryName.Replace(FileDir.Text, NewFileDir.Text);
+                        newPath = newdir + "\\" + fInfo.Name.Replace(fInfo.Extension, "") + "\\";
+                        newFilePath = newPath + fInfo.Name.Replace(fInfo.Extension, "") + ".m3u8";
+                    }
+                    else if (TabControl0.SelectedIndex == 1)
+                    {
+                        newdir = fInfo.DirectoryName.Replace(FileDir1.Text, NewFileDir1.Text);
+                        newPath = newdir + "\\";
+                        newFilePath = newPath + fInfo.Name.Replace(fInfo.Extension, "") + ".mp4";
+                    }
 
                     var item=new VideoMp4();
-                    item.CmdString = string.Format("-i \"{0}\" -hls_time 20 -hls_list_size 0 -c:v libx264 -c:a aac -strict -2 -f hls \"{1}\"", oldFilePath, newFilePath);
+                    if (TabControl0.SelectedIndex == 0)
+                    {
+                        //转换为m3u8
+                        item.CmdString = string.Format("-i \"{0}\" -hls_time 20 -hls_list_size 0 -c:v libx264 -c:a aac -strict -2 -f hls \"{1}\"", oldFilePath, newFilePath);
+                    }
+                    else if (TabControl0.SelectedIndex == 1)
+                    {
+                        //添加元信息为第一帧
+                        item.CmdString = string.Format("\"{0}\"  \"{1}\"", oldFilePath, newFilePath);
+                    }
+                    
                     item.OldfileName = fInfo.Name;
                     item.OldFilePath = fInfo.FullName;
                     item.NewFileName = fInfo.Name.Replace(fInfo.Extension, "") + ".m3u8";
@@ -130,7 +196,7 @@ namespace videom3u8
                     }
                     catch (Exception ex)
                     {
-                        LogHelper.AddLog(ex.ToString());
+                        LogHelper.AddErrorLog(ex.ToString());
                     }
                 }
                 else
@@ -143,6 +209,9 @@ namespace videom3u8
         }
 
 
+
+
+
         //要执行的方法  
         private void ScanQueue()
         {
@@ -150,15 +219,32 @@ namespace videom3u8
             {
                 try
                 {
-                    if (iCount <= 9)
+                    Thread.Sleep(100);
+
+                    var threadCount = AppConfigHelper.GetAppConfig("ThreadCount");
+                    if (string.IsNullOrEmpty(threadCount))
+                    {
+                        threadCount = "2";
+                    }
+                    var iThreadCount = 2;
+                    try
+                    {
+                        iThreadCount = Convert.ToInt32(threadCount);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogHelper.AddErrorLog(ex.ToString());
+                        iThreadCount = 2;
+                    }
+                    if (iCount <= iThreadCount)
                     {
                         //从队列中取出  
                         var item = ListQueue.Dequeue();
                         //取出的item就可以用了，里面有你要的东西 
                         ParameterizedThreadStart threadStart = new ParameterizedThreadStart(ConvertProgress);
                         Thread thread = new Thread(threadStart);
-                        thread.Start(item);
                         iCount++;
+                        thread.Start(item);
                     }
                 }
                 catch (Exception ex)
@@ -178,7 +264,8 @@ namespace videom3u8
 
             var item = (VideoMp4) parameters;
             Process p = new Process();
-            p.StartInfo.FileName = CommonStatic.FFmpegPath;
+            p.StartInfo.FileName = cmdPath;
+
             p.StartInfo.Arguments = item.CmdString;
             p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
             p.StartInfo.UseShellExecute = false;
@@ -191,7 +278,9 @@ namespace videom3u8
             p.Close();
             iCount--;
             if (iCount < 0) iCount = 0;
+            
             iNow++;
+
             TextLog("正在转换第 " + iNow + " 个视频......");
             TextLog(item);
             if (iNow == iAmount)
@@ -199,6 +288,17 @@ namespace videom3u8
                 TextLog("视频转换完成，共完成 " + iAmount + " 个视频的转换。");
                 EnableButton();
             }
+
+            //进度条
+            this.Dispatcher.Invoke(new Action(delegate
+            {
+                var jindu = Math.Round((iNow / pb.Maximum * 1.0), 2) * 100;
+
+                this.pb.Value = iNow;
+                this.tb.Text = jindu + "%";
+                Thread.Sleep(10);
+            }));
+
             p.Dispose();
 
         }
@@ -216,7 +316,7 @@ namespace videom3u8
                     if (!String.IsNullOrEmpty(output.Data))
                     {
                         //Log
-                        LogHelper.AddLog(output.Data);
+                        LogHelper.AddErrorLog(output.Data);
                     }
                 }));
             }
@@ -265,9 +365,28 @@ namespace videom3u8
                 {
                     Start.IsEnabled = true;
                     Select.IsEnabled = true;
+                    Start1.IsEnabled = true;
+                    Select1.IsEnabled = true;
                 }));
             }
         }
 
+        private void TabControl0_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+
+        }
+
+        private void MainWindow_OnClosing(object sender, CancelEventArgs e)
+        {
+            foreach (Process p in Process.GetProcessesByName("ffmpeg"))
+            {
+                if (!p.CloseMainWindow())
+                {
+                    p.Kill();
+                }
+            }
+            Environment.Exit(0);
+        }
     }
 }
