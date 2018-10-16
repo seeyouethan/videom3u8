@@ -73,8 +73,10 @@
     <Compile Include="Entity\VideoMp4.cs" />
     <Compile Include="Tools\AppConfigHelper.cs" />
     <Compile Include="Tools\CommonStatic.cs" />
+    <Compile Include="Tools\CpuHelper.cs" />
     <Compile Include="Tools\FileHelper.cs" />
     <Compile Include="Tools\CmdHelper.cs" />
+    <Compile Include="Tools\CustomerHelper.cs" />
     <Compile Include="Tools\LogHelper.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -114,7 +116,9 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="resource\img\logo.png" />

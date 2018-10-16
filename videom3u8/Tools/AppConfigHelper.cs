@@ -76,6 +76,39 @@ namespace videom3u8.Tools
         }
 
         ///<summary>
+        ///返回＊.exe.config文件中appSettings配置节的value项 如果不是整数，则返回为1
+        ///</summary>
+        ///<param name="strKey"></param>
+        ///<returns></returns>
+        public static int GetAppConfigInt(string strKey)
+        {
+            var str = "";
+            foreach (string key in ConfigurationManager.AppSettings)
+            {
+                if (key == strKey)
+                {
+                    str = ConfigurationManager.AppSettings[strKey];
+                }
+            }
+
+            if (string.IsNullOrEmpty(str))
+            {
+                return 1;
+            }
+            var i = 1;
+            try
+            {
+                i = Convert.ToInt32(str);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.AddErrorLog(ex.ToString());
+                i = 1;
+            }
+            return i;
+        }
+
+        ///<summary>
         ///在＊.exe.config文件中appSettings配置节增加一对键、值对
         ///</summary>
         ///<param name="newKey"></param>

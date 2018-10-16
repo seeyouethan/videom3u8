@@ -30,8 +30,8 @@ namespace videom3u8
 
         void App_Startup(object sender, StartupEventArgs e)
         {
-            Current.DispatcherUnhandledException += App_OnDispatcherUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            //Current.DispatcherUnhandledException += App_OnDispatcherUnhandledException;
+            //AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
             bool ret;
             mutex = new System.Threading.Mutex(true, "ElectronicNeedleTherapySystem", out ret);
@@ -51,6 +51,12 @@ namespace videom3u8
             foreach (Process p in myProgress)　　　　　　　　　　　　//关闭当前启动的Excel进程
             {
                 if (p.ProcessName == "ffmpeg")　　　　　　　　　　//通过进程名来寻找
+                {
+                    p.Kill();
+                    return;
+                }
+
+                if (p.ProcessName == "qt-faststart")　　　　　　　　　　//通过进程名来寻找
                 {
                     p.Kill();
                     return;

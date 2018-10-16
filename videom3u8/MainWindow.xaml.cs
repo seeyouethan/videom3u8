@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using videom3u8.Entity;
 using videom3u8.Tools;
 using MessageBox = System.Windows.MessageBox;
@@ -35,7 +37,7 @@ namespace videom3u8
 
         private void Select_OnClick(object sender, RoutedEventArgs e)
         {
-            FolderBrowserDialog dialog = new FolderBrowserDialog {Description = "请选择要源视频的目录"};
+            FolderBrowserDialog dialog = new FolderBrowserDialog { Description = "请选择要源视频的目录" };
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string foldPath = dialog.SelectedPath;
@@ -47,13 +49,26 @@ namespace videom3u8
                 {
                     FileDir1.Text = foldPath;
                 }
+                else if (TabControl0.SelectedIndex == 2)
+                {
+                    FileDir2.Text = foldPath;
+                }
             }
         }
 
-        public string cmdPath = CommonStatic.FFmpegPath;
+        private string cmdPath = CommonStatic.FFmpegPath;
 
+        private int cpuCount = 1;
+        private int threadCount = 1;
+        private List<string> list0 = new List<string>();
+        private int jumpCunt = 0;
         private void Start_OnClick(object sender, RoutedEventArgs e)
         {
+            list0 = CustomerHelper.fun1();
+
+            //获取设置
+            cpuCount = AppConfigHelper.GetAppConfigInt("CpuCount");
+            threadCount = AppConfigHelper.GetAppConfigInt("ThreadCount");
             //清空当前列表
             ListQueue.Clear();
             //清空进度条
@@ -63,12 +78,18 @@ namespace videom3u8
 
             var foldPath = "";
             var newfoldPath = "";
-            if (TabControl0.SelectedIndex == 0)
+            var waterMarkImg = "";
+            if (TabControl0.SelectedIndex == 0 || TabControl0.SelectedIndex == 2)
             {
                 foldPath = FileDir.Text;
                 newfoldPath = NewFileDir.Text;
                 cmdPath = CommonStatic.FFmpegPath;
-
+                if (TabControl0.SelectedIndex == 2)
+                {
+                    foldPath = FileDir2.Text;
+                    newfoldPath = NewFileDir2.Text;
+                    waterMarkImg = WaterMarkTextBox.Text.Trim();
+                }
             }
             else if (TabControl0.SelectedIndex == 1)
             {
@@ -76,6 +97,13 @@ namespace videom3u8
                 newfoldPath = NewFileDir1.Text;
                 cmdPath = CommonStatic.Qtpath;
             }
+
+            if (TabControl0.SelectedIndex == 2 && string.IsNullOrEmpty(waterMarkImg))
+            {
+                System.Windows.Forms.MessageBox.Show("请选择要添加水印的图片", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             if (string.IsNullOrEmpty(foldPath))
             {
                 System.Windows.Forms.MessageBox.Show("请选择要转换的视频的路径", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -87,7 +115,7 @@ namespace videom3u8
                 System.Windows.Forms.MessageBox.Show("请输入要转换的视频的新路径", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            if (TabControl0.SelectedIndex == 1)
+            if (TabControl0.SelectedIndex == 1 || TabControl0.SelectedIndex == 2)
             {
                 //在 【将元信息设置到第一帧】 模式下，生成文件的路径不能够和源文件路径一样，否则会出错
                 if (foldPath == newfoldPath)
@@ -106,7 +134,7 @@ namespace videom3u8
                 return;
             }
             LogTextBox.Clear();
-            LogTextBox.Text="该目录下共找到 " + ListQueue.Count + " 个视频，开始进行转换......\n";
+            LogTextBox.Text = "该目录下共找到 " + ListQueue.Count + " 个视频，开始进行转换......\n";
             iAmount = ListQueue.Count;
             iCount = 0;
             iNow = 0;
@@ -122,8 +150,12 @@ namespace videom3u8
 
             pb.Maximum = ListQueue.Count;
         }
-        
+
         private Queue<VideoMp4> ListQueue = new Queue<VideoMp4>();
+
+
+
+
 
 
         private void DeepFileDir(DirectoryInfo theDir)//递归目录 文件 
@@ -131,10 +163,10 @@ namespace videom3u8
             FileInfo[] fileInfo = theDir.GetFiles(); //目录下的文件 
             foreach (FileInfo fInfo in fileInfo)
             {
-                if (fInfo.Extension == ".mp4")
+                if (!(list0.Contains(fInfo.Name)) && fInfo.Extension == ".mp4")
                 {
                     var oldFilePath = fInfo.FullName;
-                    var newdir ="";
+                    var newdir = "";
 
                     var newPath = "";
                     var newFilePath = "";
@@ -152,22 +184,42 @@ namespace videom3u8
                         newPath = newdir + "\\";
                         newFilePath = newPath + fInfo.Name.Replace(fInfo.Extension, "") + ".mp4";
                     }
+                    else if (TabControl0.SelectedIndex == 2)
+                    {
+                        //添加水印后仍然为mp4视频
+                        newdir = fInfo.DirectoryName.Replace(FileDir2.Text, NewFileDir2.Text);
+                        newPath = newdir + "\\";
+                        newFilePath = newPath + fInfo.Name.Replace(fInfo.Extension, "") + ".mp4";
+                    }
 
-                    var item=new VideoMp4();
+                    var item = new VideoMp4();
                     if (TabControl0.SelectedIndex == 0)
                     {
                         //转换为m3u8
-                        item.CmdString = string.Format("-i \"{0}\" -hls_time 20 -hls_list_size 0 -c:v libx264 -c:a aac -strict -2 -f hls \"{1}\"", oldFilePath, newFilePath);
+                        item.CmdString = string.Format("-i \"{0}\" -hls_time 5 -hls_list_size 0 -c:v libx264 -c:a aac -strict -2 -threads {1} -f hls \"{2}\"", oldFilePath, cpuCount, newFilePath);
                     }
                     else if (TabControl0.SelectedIndex == 1)
                     {
                         //添加元信息为第一帧
-                        item.CmdString = string.Format("\"{0}\"  \"{1}\"", oldFilePath, newFilePath);
+                        item.CmdString = string.Format("\"{0}\" \"{1}\"", oldFilePath, newFilePath);
                     }
-                    
+                    else if (TabControl0.SelectedIndex == 2)
+                    {
+                        //添加水印  这个图片写成绝对路径 不会被识别，只能放到和exe执行文件同一目录下
+                        //示例：ffmpeg -y –i "C:\Users\Administrator\Desktop\watermark\am.mp4" -vf "movie=cnkiwatermark.png,scale=135:50[watermark];[in][watermark]overlay=main_w-overlay_w-10:10[out]" C:\Users\Administrator\Desktop\watermark2\am.mp4
+                        item.CmdString = string.Format(" -y -i \"{0}\" -vf \"movie={1},scale=170:60[watermark];[in][watermark]overlay=main_w-overlay_w-10:10[out]\" {2}", oldFilePath, waterMarkImg, newFilePath);
+                    }
+
                     item.OldfileName = fInfo.Name;
                     item.OldFilePath = fInfo.FullName;
-                    item.NewFileName = fInfo.Name.Replace(fInfo.Extension, "") + ".m3u8";
+                    if (TabControl0.SelectedIndex == 0)
+                    {
+                        item.NewFileName = fInfo.Name.Replace(fInfo.Extension, "") + ".m3u8";
+                    }
+                    else
+                    {
+                        item.NewFileName = fInfo.Name.Replace(fInfo.Extension, "") + ".mp4";
+                    }
                     item.NewFilePath = newFilePath;
                     ListQueue.Enqueue(item);
                     //创建目录
@@ -220,23 +272,7 @@ namespace videom3u8
                 try
                 {
                     Thread.Sleep(100);
-
-                    var threadCount = AppConfigHelper.GetAppConfig("ThreadCount");
-                    if (string.IsNullOrEmpty(threadCount))
-                    {
-                        threadCount = "2";
-                    }
-                    var iThreadCount = 2;
-                    try
-                    {
-                        iThreadCount = Convert.ToInt32(threadCount);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogHelper.AddErrorLog(ex.ToString());
-                        iThreadCount = 2;
-                    }
-                    if (iCount <= iThreadCount)
+                    if (iCount < threadCount)
                     {
                         //从队列中取出  
                         var item = ListQueue.Dequeue();
@@ -255,14 +291,16 @@ namespace videom3u8
         }
 
 
-        public int iCount=0;
+        public int iCount = 0;
         public int iAmount = 0;
         public int iNow = 0;
-
+        public int tempNow = 1;
         private void ConvertProgress(object parameters)
         {
 
-            var item = (VideoMp4) parameters;
+            TextLog("--------------------------------------");
+            TextLog("正在转换第【 " + (tempNow++) + " 】个视频......");
+            var item = (VideoMp4)parameters;
             Process p = new Process();
             p.StartInfo.FileName = cmdPath;
 
@@ -276,16 +314,17 @@ namespace videom3u8
             p.BeginErrorReadLine();
             p.WaitForExit();
             p.Close();
+
             iCount--;
             if (iCount < 0) iCount = 0;
-            
             iNow++;
-
-            TextLog("正在转换第 " + iNow + " 个视频......");
+            TextLog("第【 " + iNow + " 】个视频转换完成。");
+            LogHelper.AddEventLog("第【 " + iNow + "】个视频转换完成。");
             TextLog(item);
             if (iNow == iAmount)
             {
                 TextLog("视频转换完成，共完成 " + iAmount + " 个视频的转换。");
+                LogHelper.AddEventLog("视频转换完成，共完成 " + iAmount + " 个视频的转换。");
                 EnableButton();
             }
 
@@ -332,8 +371,11 @@ namespace videom3u8
             {
                 this.Dispatcher.Invoke(new Action(delegate
                 {
-                    LogTextBox.Text += "转换完成，生成文件" + item.NewFileName+"\n";
+                    LogTextBox.Text += "转换完成，生成文件" + item.NewFileName + "\n";
                     LogTextBox.Text += "文件路径为" + item.NewFilePath + "\n";
+
+                    LogHelper.AddEventLog("转换完成，生成文件" + item.NewFileName + "\n");
+                    LogHelper.AddEventLog("文件路径为" + item.NewFilePath + "\n");
                 }));
             }
         }
@@ -348,7 +390,7 @@ namespace videom3u8
             {
                 this.Dispatcher.Invoke(new Action(delegate
                 {
-                    LogTextBox.Text += text+ "\n";
+                    LogTextBox.Text += text + "\n";
                 }));
             }
         }
@@ -387,6 +429,96 @@ namespace videom3u8
                 }
             }
             Environment.Exit(0);
+        }
+
+        private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            CpuCountLabel.Content = CpuHelper.GteCpuCount();
+        }
+
+        System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog();
+        Thread copyThread;
+        private string waterMarkImg = "";
+        /// <summary>
+        /// 上传要添加水印的图片到执行exe的目录下（复制，若有同名的则直接覆盖）
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void UploadWaterMarkImgBtn_OnClick(object sender, RoutedEventArgs e)
+        {
+            openFileDialog.Filter = "*.png|*.png";
+
+            //注意，此处一定要手动引入System.Window.Forms空间，否则你如果使用默认的DialogResult会发现没有OK属性
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                WaterMarkTextBox.Text = openFileDialog.FileName;
+
+                string fileName = openFileDialog.FileName;
+                waterMarkImg= openFileDialog.FileName.Substring(openFileDialog.FileName.LastIndexOf("\\")).Replace("\\", "");
+                string destPath = System.AppDomain.CurrentDomain.BaseDirectory + waterMarkImg;
+                if (!File.Exists(fileName))
+                {
+                    MessageBox.Show("源文件不存在");
+                    return;
+                }
+
+                //保存复制文件信息，以进行传递
+                CopyFileInfo c = new CopyFileInfo() { SourcePath = fileName, DestPath = destPath };
+                //线程异步调用复制文件
+                copyThread = new Thread(new ParameterizedThreadStart(CopyFile));
+                copyThread.Start(c);
+            }
+        }
+
+
+        /// <summary>
+        /// 复制文件的委托方法  参考 https://www.cnblogs.com/yangyancheng/archive/2011/04/03/2004875.html
+        /// </summary>
+        /// <param name="obj">复制文件的信息</param>
+        private void CopyFile(object obj)
+        {
+            CopyFileInfo c = obj as CopyFileInfo;
+            CopyFile(c.SourcePath, c.DestPath);
+        }
+        /// <summary>
+        /// 复制文件
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="destPath"></param>
+        private void CopyFile(string sourcePath, string destPath)
+        {
+            FileInfo f = new FileInfo(sourcePath);
+            FileStream fsR = f.OpenRead();
+            FileStream fsW = File.Create(destPath);
+            long fileLength = f.Length;
+            byte[] buffer = new byte[1024];
+            int n = 0;
+
+            while (true)
+            {
+                //this.displayCopyInfo.Dispatcher.BeginInvoke(DispatcherPriority.SystemIdle,
+                //    new Action<long, long>(UpdateCopyProgress), fileLength, fsR.Position);
+
+                //读写文件
+                n = fsR.Read(buffer, 0, 1024);
+                if (n == 0)
+                {
+                    break;
+                }
+                fsW.Write(buffer, 0, n);
+                fsW.Flush();
+                Thread.Sleep(1);
+            }
+
+            System.Windows.Forms.MessageBox.Show("水印图片上传成功！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            fsR.Close();
+            fsW.Close();
+        }
+
+        public class CopyFileInfo
+        {
+            public string SourcePath { get; set; }
+            public string DestPath { get; set; }
         }
     }
 }

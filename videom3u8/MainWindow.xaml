@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:videom3u8"
         mc:Ignorable="d"
-        Title="视频格式转换工具" Height="520" Width="820" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" AllowDrop="True"  WindowState="Normal" Closing="MainWindow_OnClosing">
+        Title="视频格式转换工具v1.0" Height="520" Width="820" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" AllowDrop="True"  WindowState="Normal" Closing="MainWindow_OnClosing" Loaded="MainWindow_OnLoaded">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="10" />
@@ -30,12 +30,12 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Row="0" Orientation="Horizontal">
                         <Label Margin="12,0,0,0" Height="30" VerticalContentAlignment="Center">源文件目录：</Label>
-                        <TextBox x:Name="FileDir" HorizontalAlignment="Left" Height="30" FontSize="20" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="600"  />
+                        <TextBox x:Name="FileDir" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="600" VerticalContentAlignment="Center"  />
                         <Button x:Name="Select" Content="选    择" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Height="30" Click="Select_OnClick" Cursor="Hand" Margin="10,0,0,0"/>
                     </StackPanel>
                     <StackPanel Grid.Row="2" Orientation="Horizontal">
                         <Label Height="30" VerticalContentAlignment="Center">生成文件目录：</Label>
-                        <TextBox x:Name="NewFileDir" HorizontalAlignment="Left" Height="30" FontSize="20" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="600" />
+                        <TextBox x:Name="NewFileDir" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="600" VerticalContentAlignment="Center" />
                         <Button x:Name="Start" Content="开    始" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Height="30"  Click="Start_OnClick" Cursor="Hand" Margin="10,0,0,0"/>
                     </StackPanel>
                 </Grid>
@@ -53,13 +53,61 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Row="0" Orientation="Horizontal">
                         <Label Margin="12,0,0,0" Height="30" VerticalContentAlignment="Center">源文件目录：</Label>
-                        <TextBox x:Name="FileDir1" HorizontalAlignment="Left" Height="30" FontSize="20" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="600"  />
+                        <TextBox x:Name="FileDir1" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="600" VerticalContentAlignment="Center" />
                         <Button x:Name="Select1" Content="选    择" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Height="30" Click="Select_OnClick" Cursor="Hand" Margin="10,0,0,0"/>
                     </StackPanel>
                     <StackPanel Grid.Row="2" Orientation="Horizontal">
                         <Label Height="30" VerticalContentAlignment="Center">生成文件目录：</Label>
-                        <TextBox x:Name="NewFileDir1" HorizontalAlignment="Left" Height="30" FontSize="20" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="600" />
+                        <TextBox x:Name="NewFileDir1" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="600" VerticalContentAlignment="Center" />
                         <Button x:Name="Start1" Content="开    始" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Height="30"  Click="Start_OnClick" Cursor="Hand" Margin="10,0,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            <TabItem Header="添加水印">
+                <Grid Margin="0,0,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="30" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <Label Margin="12,0,0,9" Height="30" VerticalContentAlignment="Center">源文件目录：</Label>
+                        <TextBox x:Name="FileDir2" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="600" VerticalContentAlignment="Center" Margin="0,0,0,0" />
+                        <Button x:Name="Select2" Content="选    择" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Height="30" Click="Select_OnClick" Cursor="Hand" Margin="10,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal">
+                        <Label Height="30" VerticalContentAlignment="Center" Margin="24,-8,0,6">水印图片：</Label>
+                        <TextBox x:Name="WaterMarkTextBox" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="600" VerticalContentAlignment="Center" Margin="0,-8,0,-1" />
+                        <Button x:Name="UploadWaterMarkImgBtn" Content="上    传" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Height="30"  Click="UploadWaterMarkImgBtn_OnClick" Cursor="Hand" Margin="10,-8,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                        <Label Height="30" VerticalContentAlignment="Center" Margin="0,-6,0,-1">生成文件目录：</Label>
+                        <TextBox x:Name="NewFileDir2" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="600" VerticalContentAlignment="Center" Margin="0,-6,0,0" />
+                        <Button x:Name="Start2" Content="开    始" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Height="30"  Click="Start_OnClick" Cursor="Hand" Margin="10,-6,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            <TabItem Header="说明">
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="26" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" Grid.Row="0">
+                        <Label FontSize="10">当前CPU个数：</Label>
+                        <Label FontSize="10" x:Name="CpuCountLabel">0</Label>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Vertical" Grid.Row="1" HorizontalAlignment="Center">
+                        <TextBlock FontSize="10" TextWrapping="Wrap" LineHeight="16" Width="790">在执行【转换m3u8】程序时，主要消耗CPU个数，可以根据自身电脑的CPU配置，在config文件中设置执行程序时候启动的线程数和启动的cpu核心个数。在实行【将元信息设置到第一帧】程序时，主要消耗磁盘I/O,和CPU关系不大，因此可以将线程运行个数设置为1，CPU个数设置为1</TextBlock>
+
                     </StackPanel>
                 </Grid>
             </TabItem>
@@ -68,7 +116,6 @@
             <TextBox Margin="14,0,14,0" x:Name="LogTextBox" HorizontalAlignment="Center" Height="310" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="760" VerticalScrollBarVisibility="Visible" AcceptsReturn="True"/>
             <ProgressBar x:Name="pb" Width="760" Minimum="0" Margin="0,2,0,0" Height="26" ></ProgressBar>
             <TextBlock x:Name="tb" Height="23" Width="760" TextAlignment="Center" VerticalAlignment="Center" Margin="0,-20,0,0"></TextBlock>
-
         </StackPanel>
     </Grid>
 </Window>
