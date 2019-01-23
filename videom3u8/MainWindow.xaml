@@ -86,8 +86,9 @@
                     </StackPanel>
                     <StackPanel Grid.Row="3" Orientation="Horizontal">
                         <Label Height="30" VerticalContentAlignment="Center" Margin="0,-6,0,-1">生成文件目录：</Label>
-                        <TextBox x:Name="NewFileDir2" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="600" VerticalContentAlignment="Center" Margin="0,-6,0,0" />
-                        <Button x:Name="Start2" Content="开    始" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Height="30"  Click="Start_OnClick" Cursor="Hand" Margin="10,-6,0,0"/>
+                        <TextBox x:Name="NewFileDir2" HorizontalAlignment="Left" Height="30" FontSize="16" Text="" VerticalAlignment="Top" Width="233" VerticalContentAlignment="Center" Margin="0,-6,0,-1" />
+                        <Button x:Name="Start2" Content="开始(转换源文件目录)" HorizontalAlignment="Left" VerticalAlignment="Top" Width="175" Height="28"  Click="Start_OnClick" Cursor="Hand" Margin="10,-6,0,0"/>
+                        <Button x:Name="Start3" Content="开始(转换根目录下xml)" HorizontalAlignment="Left" VerticalAlignment="Top" Width="175" Height="28"  Click="StartOnXml_OnClick" Cursor="Hand" Margin="10,-6,0,0"/>
                     </StackPanel>
                 </Grid>
             </TabItem>

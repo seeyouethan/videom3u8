@@ -19,6 +19,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Xml;
 using videom3u8.Entity;
 using videom3u8.Tools;
 using MessageBox = System.Windows.MessageBox;
@@ -151,6 +152,81 @@ namespace videom3u8
             pb.Maximum = ListQueue.Count;
         }
 
+
+        private void StartOnXml_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (TabControl0.SelectedIndex == 2 && string.IsNullOrEmpty(waterMarkImg))
+            {
+                System.Windows.Forms.MessageBox.Show("请选择要添加水印的图片", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            //获取设置
+            cpuCount = AppConfigHelper.GetAppConfigInt("CpuCount");
+            threadCount = AppConfigHelper.GetAppConfigInt("ThreadCount");
+            //清空当前列表
+            ListQueue.Clear();
+            //清空进度条
+            this.pb.Maximum = 0;
+            this.tb.Text = "0%";
+            this.pb.Value = 0;
+
+            //先从根目录下查找xml
+            XmlDocument xmldoc = new XmlDocument();
+            try
+            {
+                string xmlPath = System.AppDomain.CurrentDomain.BaseDirectory + "watermark.xml";
+                xmldoc.Load(xmlPath);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show("xml文件加载出错", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LogHelper.AddErrorLog(ex.ToString());
+                return;
+            }
+            //获取节点列表 
+            XmlNodeList topNode = xmldoc.DocumentElement.ChildNodes;
+            foreach (XmlElement element in topNode)
+            {
+                var str = element.InnerText;
+                var item=new VideoMp4();
+                var oldFilePath = str; // newFilePath.Substring(0,newFilePath.LastIndexOf("."))
+                var filename = oldFilePath.Substring(oldFilePath.LastIndexOf("\\")).Replace("\\", "");
+                var fileformat = filename.Substring(filename.LastIndexOf("."));
+                var newfilename = filename.Substring(0, filename.LastIndexOf(".")) + "_znykt_cnki" + fileformat;
+                var newFilePath = oldFilePath.Substring(0, oldFilePath.LastIndexOf("\\")) +"\\"+ newfilename;
+                item.CmdString = string.Format(" -y -i \"{0}\" -vf \"movie={1},scale=170:60[watermark];[in][watermark]overlay=main_w-overlay_w-10:10[out]\" \"{2}\"", oldFilePath, waterMarkImg, newFilePath);
+                item.NewFileName = newfilename;
+                item.NewFilePath = newFilePath;
+                item.OldFilePath = oldFilePath;
+                item.OldfileName = filename;
+                ListQueue.Enqueue(item);
+            }
+
+            if (ListQueue.Count == 0)
+            {
+                System.Windows.Forms.MessageBox.Show("该路径下未找到MP4格式的视频", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            LogTextBox.Clear();
+            LogTextBox.Text = "该目录下共找到 " + ListQueue.Count + " 个视频，开始进行转换......\n";
+            iAmount = ListQueue.Count;
+            iCount = 0;
+            iNow = 0;
+            Thread thread = new Thread(ThreadStart);
+            thread.IsBackground = true;
+            thread.Start();
+
+            Select.IsEnabled = false;
+            Start.IsEnabled = false;
+
+            Select1.IsEnabled = false;
+            Start1.IsEnabled = false;
+
+            pb.Maximum = ListQueue.Count;
+        }
+
+
+
         private Queue<VideoMp4> ListQueue = new Queue<VideoMp4>();
 
 
@@ -207,7 +283,7 @@ namespace videom3u8
                     {
                         //添加水印  这个图片写成绝对路径 不会被识别，只能放到和exe执行文件同一目录下
                         //示例：ffmpeg -y –i "C:\Users\Administrator\Desktop\watermark\am.mp4" -vf "movie=cnkiwatermark.png,scale=135:50[watermark];[in][watermark]overlay=main_w-overlay_w-10:10[out]" C:\Users\Administrator\Desktop\watermark2\am.mp4
-                        item.CmdString = string.Format(" -y -i \"{0}\" -vf \"movie={1},scale=170:60[watermark];[in][watermark]overlay=main_w-overlay_w-10:10[out]\" {2}", oldFilePath, waterMarkImg, newFilePath);
+                        item.CmdString = string.Format(" -y -i \"{0}\" -vf \"movie={1},scale=170:60[watermark];[in][watermark]overlay=main_w-overlay_w-10:10[out]\" \"{2}\"", oldFilePath, waterMarkImg, newFilePath);
                     }
 
                     item.OldfileName = fInfo.Name;
